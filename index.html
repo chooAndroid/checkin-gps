@@ -25,22 +25,7 @@
   <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
 
   <script>
-    const CENTER_LAT = 15.223933; // พิกัดบ้านลุง
-    const CENTER_LNG = 104.933856;
-    const ALLOWED_RADIUS_METERS = 20;
-    const WEB_APP_URL ="https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec"; // แทนไร่บาง
-
-    function calculateDistance(lat1, lng1, lat2, lng2) {
-      const R = 6371000; // รัศมีโลกเมตร
-      const toRad = x => x * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLng = toRad(lng2 - lng1);
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLng/2) * Math.sin(dLng/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
 
     document.getElementById("checkinForm").addEventListener("submit", function(e) {
       e.preventDefault();
@@ -55,12 +40,6 @@
       navigator.geolocation.getCurrentPosition(function(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const distance = calculateDistance(lat, lng, CENTER_LAT, CENTER_LNG);
-
-        if (distance > ALLOWED_RADIUS_METERS) {
-          document.getElementById("result").innerText = "❌ คุณอยู่นอกพื้นที่ 20 เมตร ไม่สามารถเช็คชื่อได้";
-          return;
-        }
 
         const data = {
           name: formData.get("name"),
