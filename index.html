@@ -1,98 +1,89 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>ระบบเช็คชื่อด้วย GPS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
-    input, button { font-size: 1.2em; padding: 10px; width: 100%; margin-top: 10px; }
-    #status { margin-top: 15px; font-weight: bold; }
-  </style>
+  <title>ระบบเช็คชื่อ (ทดสอบ GPS)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-  <h2>ระบบเช็คชื่อด้วย GPS</h2>
-  <div id="form-area" style="display: none;">
-    <input type="email" id="email" placeholder="กรอกอีเมลของคุณ" required>
-    <button onclick="submitData()">ส่งข้อมูล</button>
-  </div>
-  <div id="status">กำลังตรวจสอบตำแหน่งของคุณ...</div>
+  <h2>✅ ระบบเช็คชื่อ (เวอร์ชันทดสอบ GPS)</h2>
+  <form id="checkinForm">
+    <label>ชื่อ-นามสกุล:</label><br>
+    <input type="text" name="name" required><br><br>
+
+    <label>สถานะ:</label><br>
+    <select name="status">
+      <option value="มาค่ะ/ครับ">มาค่ะ/ครับ</option>
+      <option value="สาย">สาย</option>
+      <option value="ลากิจ">ลากิจ</option>
+      <option value="ลาป่วย">ลาป่วย</option>
+    </select><br><br>
+
+    <button type="submit">✅ เช็คชื่อเลย</button>
+  </form>
+
+  <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
 
   <script>
-    const targetLat = 15.223933;
-    const targetLng = 104.933856;
-    const maxDistance = 200; // หน่วยเป็นเมตร
-    let userLat, userLng, distance, isOutOfRange = false;
+    const CENTER_LAT = 15.223933; // พิกัดบ้านลุง
+    const CENTER_LNG = 104.933856;
+    const ALLOWED_RADIUS_METERS = 20;
+    const WEB_APP_URL ="https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec"; // แทนไร่บาง
 
-    function haversineDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371e3;
-      const toRad = deg => deg * Math.PI / 180;
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371000; // รัศมีโลกเมตร
+      const toRad = x => x * Math.PI / 180;
       const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
     }
 
-    function getLocation() {
+    document.getElementById("checkinForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const form = this;
+      const formData = new FormData(form);
+
       if (!navigator.geolocation) {
-        document.getElementById("status").innerText = "เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง";
+        document.getElementById("result").innerText = "เบราว์เซอร์นี้ไม่รองรับ GPS";
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          userLat = pos.coords.latitude;
-          userLng = pos.coords.longitude;
-          distance = haversineDistance(userLat, userLng, targetLat, targetLng);
-          isOutOfRange = distance > maxDistance;
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const distance = calculateDistance(lat, lng, CENTER_LAT, CENTER_LNG);
 
-          document.getElementById("form-area").style.display = "block";
-          document.getElementById("status").innerText = 
-            `คุณอยู่ห่างจากจุดเช็คชื่อประมาณ ${Math.round(distance)} เมตร` + 
-            (isOutOfRange ? " (เกินระยะที่กำหนด)" : "");
-        },
-        (err) => {
-          document.getElementById("status").innerText = "กรุณาเปิด GPS และอนุญาตให้เข้าถึงตำแหน่ง";
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    }
+        if (distance > ALLOWED_RADIUS_METERS) {
+          document.getElementById("result").innerText = "❌ คุณอยู่นอกพื้นที่ 20 เมตร ไม่สามารถเช็คชื่อได้";
+          return;
+        }
 
-    function submitData() {
-      const email = document.getElementById("email").value.trim();
-      if (!email) {
-        alert("กรุณากรอกอีเมลก่อนส่งข้อมูล");
-        return;
-      }
+        const data = {
+          name: formData.get("name"),
+          status: formData.get("status"),
+          time: new Date().toISOString(),
+          latitude: lat,
+          longitude: lng
+        };
 
-      const now = new Date();
-      const timestamp = now.toLocaleString("th-TH");
+        fetch(WEB_APP_URL, {
+          method: "POST",
+          body: JSON.stringify(data)
+        })
+        .then(res => res.text())
+        .then(txt => {
+          document.getElementById("result").innerText = txt;
+          form.reset();
+        });
 
-      const payload = {
-        email,
-        timestamp,
-        lat: userLat,
-        lng: userLng,
-        distance: Math.round(distance),
-        note: isOutOfRange ? "อยู่นอกระยะมากกว่า 200 เมตร" : ""
-      };
-
-      fetch("https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec", {
-        method: "POST",
-        body: JSON.stringify(payload),
-        headers: { "Content-Type": "application/json" }
-      })
-      .then(res => res.text())
-      .then(msg => {
-        document.getElementById("status").innerText = "✅ ส่งข้อมูลเรียบร้อยแล้ว";
-        document.getElementById("form-area").style.display = "none";
-      })
-      .catch(err => {
-        document.getElementById("status").innerText = "❌ ส่งข้อมูลไม่สำเร็จ: " + err;
+      }, function(error) {
+        document.getElementById("result").innerText = "❌ ไม่สามารถดึงตำแหน่งได้: " + error.message;
       });
-    }
-
-    getLocation();
+    });
   </script>
 </body>
 </html>
