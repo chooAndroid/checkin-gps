@@ -33,7 +33,7 @@
     const DEST_LAT = 15.223933;
     const DEST_LNG = 104.933856;
     const ALLOW_RADIUS = 200; // เมตร
-    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // ← ใส่ URL ของ Google Script
+    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // ← เปลี่ยนเป็นของลุง
 
     let userName = "";
     let userEmail = "";
@@ -59,5 +59,61 @@
     }
 
     function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential); // ✅ ใช้ฟังก์ชันใหม่
+      const data = parseJwt(response.credential); // ✅ แก้ตรงนี้
       userName = data.name;
+      userEmail = data.email;
+
+      document.getElementById("userInfo").innerHTML = `👤 คุณล็อกอินด้วย: ${userName} (${userEmail})`;
+      document.getElementById("checkinBtn").style.display = "inline-block";
+      document.getElementById("signinDiv").style.display = "none";
+    }
+
+    window.onload = () => {
+      google.accounts.id.initialize({
+        client_id: "1032301073622-jo51upjj1a45kdkqrm78sved3gilg2ml.apps.googleusercontent.com", // ← ของลุง
+        callback: handleCredentialResponse,
+        auto_select: true, // ✅ เปิด One Tap อัตโนมัติ
+        cancel_on_tap_outside: false
+      });
+      google.accounts.id.renderButton(
+        document.getElementById("signinDiv"),
+        { theme: "outline", size: "large" }
+      );
+      google.accounts.id.prompt(); // ⬅ ให้แสดง One Tap ทันที
+    };
+
+    document.getElementById("checkinBtn").addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        alert("เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const dist = distanceMeter(lat, lng, DEST_LAT, DEST_LNG).toFixed(2);
+
+        if (dist <= ALLOW_RADIUS) {
+          const data = {
+            name: userName,
+            email: userEmail,
+            time: new Date().toLocaleString("th-TH"),
+            lat: lat,
+            lng: lng,
+            dist: dist
+          };
+          fetch(SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          })
+          .then(r => r.text())
+          .then(txt => {
+            document.getElementById("result").innerHTML = `<p class='ok'>✅ บันทึกชื่อเรียบร้อย</p>`;
+            setTimeout(() => window.close(), 2000);
+          })
+          .catch(err => {
+            document.getElementById("result").innerHTML = `<p class='warn'>เกิดข้อผิดพลาด: ${err}</p>`;
+          });
+        } else {
+          document.getElementById("result").innerHTML = `<p class='warn'>❌ คุณอยู่นอกระยะที่กำหนด<br>คุณห่างจากตึก 8 = ${dist} เมตร</p>`
