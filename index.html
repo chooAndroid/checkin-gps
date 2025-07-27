@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -11,6 +11,11 @@
       background: #fefefe;
       font-size: 16px;
     }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
+    }
     .ok { color: green; font-weight: bold; margin-top: 20px; }
     .warn { color: red; font-weight: bold; margin-top: 20px; }
   </style>
@@ -19,6 +24,7 @@
 <body>
   <h2>✅ ระบบเช็คชื่อด้วย Gmail + GPS</h2>
 
+  <div id="signinDiv"></div>
   <div id="userInfo" style="margin-top:15px;"></div>
   <button id="checkinBtn" style="display:none;">📌 เช็คชื่อ</button>
   <div id="result"></div>
@@ -27,37 +33,40 @@
     const DEST_LAT = 15.223933;
     const DEST_LNG = 104.933856;
     const ALLOW_RADIUS = 200; // เมตร
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIVP5NjtuzCMRHYxATyQnB4_LvMsDvBcvm34RkUkrCTIf3yPl5UE5AheBw_IXa4NGO/exec"; // ← แก้เป็นของลุงนะ
+    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // ← เปลี่ยนเป็นของลุง
 
     let userName = "";
     let userEmail = "";
 
-    function distanceMeter(lat1, lng1, lat2, lng2) {
-      const R = 6371000;
-      const toRad = deg => deg * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLng = toRad(lng2 - lng1);
-      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    function parseJwt(token) {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')
+      );
+      return JSON.parse(jsonPayload);
     }
 
     function handleCredentialResponse(response) {
-      const data = JSON.parse(atob(response.credential.split('.')[1]));
+      const data = parseJwt(response.credential);
       userName = data.name;
       userEmail = data.email;
 
-      document.getElementById("userInfo").innerHTML = `👤 ล็อกอินสำเร็จ: ${userName} (${userEmail})`;
+      document.getElementById("userInfo").innerHTML = `👤 คุณล็อกอินด้วย: ${userName} (${userEmail})`;
       document.getElementById("checkinBtn").style.display = "inline-block";
+      document.getElementById("signinDiv").style.display = "none";
     }
 
     window.onload = () => {
       google.accounts.id.initialize({
         client_id: "1032301073622-jo51upjj1a45kdkqrm78sved3gilg2ml.apps.googleusercontent.com",
         callback: handleCredentialResponse,
-        auto_select: true, // ← เปิด One Tap อัตโนมัติ
+        auto_select: true,
         cancel_on_tap_outside: false
       });
-      google.accounts.id.prompt(); // ← แสดง One Tap popup ทันที
+      google.accounts.id.prompt(); // แสดง One Tap popup ทันที
     };
 
     document.getElementById("checkinBtn").addEventListener("click", () => {
@@ -100,6 +109,15 @@
         alert("ไม่สามารถดึงตำแหน่งได้: " + err.message);
       });
     });
+
+    function distanceMeter(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
   </script>
 </body>
 </html>
