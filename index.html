@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -33,7 +33,7 @@
     const DEST_LAT = 15.223933;
     const DEST_LNG = 104.933856;
     const ALLOW_RADIUS = 200; // เมตร
-    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // ← เปลี่ยนเป็นของลุง
+    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // ← ใส่ URL ของ Google Script
 
     let userName = "";
     let userEmail = "";
@@ -42,73 +42,12 @@
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(
-        atob(base64).split('').map(function(c) {
+        atob(base64).split('').map(c => {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join('')
       );
       return JSON.parse(jsonPayload);
     }
-
-    function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential);
-      userName = data.name;
-      userEmail = data.email;
-
-      document.getElementById("userInfo").innerHTML = `👤 คุณล็อกอินด้วย: ${userName} (${userEmail})`;
-      document.getElementById("checkinBtn").style.display = "inline-block";
-      document.getElementById("signinDiv").style.display = "none";
-    }
-
-    window.onload = () => {
-      google.accounts.id.initialize({
-        client_id: "1032301073622-jo51upjj1a45kdkqrm78sved3gilg2ml.apps.googleusercontent.com",
-        callback: handleCredentialResponse,
-        auto_select: true,
-        cancel_on_tap_outside: false
-      });
-      google.accounts.id.prompt(); // แสดง One Tap popup ทันที
-    };
-
-    document.getElementById("checkinBtn").addEventListener("click", () => {
-      if (!navigator.geolocation) {
-        alert("เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง");
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const dist = distanceMeter(lat, lng, DEST_LAT, DEST_LNG).toFixed(2);
-
-        if (dist <= ALLOW_RADIUS) {
-          const data = {
-            name: userName,
-            email: userEmail,
-            time: new Date().toLocaleString("th-TH"),
-            lat: lat,
-            lng: lng,
-            dist: dist
-          };
-          fetch(SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-          })
-          .then(r => r.text())
-          .then(txt => {
-            document.getElementById("result").innerHTML = `<p class='ok'>✅ บันทึกชื่อเรียบร้อย</p>`;
-            setTimeout(() => window.close(), 2000);
-          })
-          .catch(err => {
-            document.getElementById("result").innerHTML = `<p class='warn'>เกิดข้อผิดพลาด: ${err}</p>`;
-          });
-        } else {
-          document.getElementById("result").innerHTML = `<p class='warn'>❌ คุณอยู่นอกระยะที่กำหนด<br>คุณห่างจากตึก 8 = ${dist} เมตร</p>`;
-        }
-      }, err => {
-        alert("ไม่สามารถดึงตำแหน่งได้: " + err.message);
-      });
-    });
 
     function distanceMeter(lat1, lng1, lat2, lng2) {
       const R = 6371000;
@@ -118,6 +57,7 @@
       const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
-  </script>
-</body>
-</html>
+
+    function handleCredentialResponse(response) {
+      const data = parseJwt(response.credential); // ✅ ใช้ฟังก์ชันใหม่
+      userName = data.name;
