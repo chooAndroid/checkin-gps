@@ -2,94 +2,101 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>เช็คชื่อด้วย GPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ระบบเช็คชื่อด้วยอีเมล + GPS</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      font-size: 16px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      margin: 5px 0;
+      width: 100%;
+      max-width: 400px;
+    }
+    .ok { color: green; margin-top: 15px; font-weight: bold; }
+    .warn { color: red; margin-top: 15px; font-weight: bold; }
+  </style>
 </head>
 <body>
-  <h1>ระบบเช็คชื่อด้วย GPS</h1>
-  <form id="form">
-    <label for="name">ชื่อ:</label>
-    <input type="text" id="name" name="name" required><br><br>
-
-    <label for="status">สถานะ:</label>
-    <select id="status" name="status">
-      <option value="มาเรียน">มาเรียน</option>
-      <option value="ขาดเรียน">ขาดเรียน</option>
-      <option value="สาย">สาย</option>
-    </select><br><br>
-
-    <button type="submit">เช็คชื่อ</button>
-  </form>
-
-  <p style="color:red; font-weight:bold;">
-    * หากคุณใช้ Android กรุณาเปิดเว็บนี้ใน Chrome เท่านั้น<br>
-    (หากเปิดจาก LINE, Facebook หรือแอปอื่น → ให้กดปุ่ม ⋮ แล้วเลือก “เปิดใน Chrome”)
-  </p>
-
-  <p id="debug" style="color:blue;"></p>
-  <p id="result" style="color:green;"></p>
+  <h2>✅ ระบบเช็คชื่อด้วยอีเมล + GPS</h2>
+  
+  <label>ชื่อ - นามสกุล:</label><br>
+  <input type="text" id="name" placeholder="ใส่ชื่อ-นามสกุล"><br>
+  
+  <label>อีเมล:</label><br>
+  <input type="email" id="email" placeholder="ใส่อีเมล"><br>
+  
+  <button onclick="checkin()">📌 เช็คชื่อ</button>
+  
+  <div id="result"></div>
 
   <script>
-    const lat_home = 15.223933;
-    const lng_home = 104.933856;
+    const DEST_LAT = 15.223933;
+    const DEST_LNG = 104.933856;
+    const ALLOW_RADIUS = 200; // เมตร
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIVP5NjtuzCMRHYxATyQnB4_LvMsDvBcvm34RkUkrCTIf3yPl5UE5AheBw_IXa4NGO/exec"; // ← แก้ตรงนี้
 
-    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-      var R = 6371e3;
-      var dLat = (lat2 - lat1) * Math.PI / 180;
-      var dLon = (lon2 - lon1) * Math.PI / 180;
-      var a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      var d = R * c;
-      return d;
+    function distanceMeter(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    let userLat = null, userLng = null;
+    function checkin() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
 
-    navigator.geolocation.getCurrentPosition(function (position) {
-      userLat = position.coords.latitude;
-      userLng = position.coords.longitude;
-      const dist = getDistanceFromLatLonInMeters(userLat, userLng, lat_home, lng_home);
-
-      document.getElementById("debug").innerHTML =
-        `Lat: ${userLat.toFixed(6)}<br>
-         Lng: ${userLng.toFixed(6)}<br>
-         Distance: ${dist.toFixed(2)} m`;
-    }, function (error) {
-      document.getElementById("debug").innerText = "ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาอนุญาตการเข้าถึงตำแหน่ง";
-    });
-
-    document.getElementById("form").addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (userLat === null || userLng === null) {
-        alert("กำลังโหลดตำแหน่ง กรุณารอสักครู่แล้วลองใหม่อีกครั้ง");
+      if (!name || !email) {
+        alert("กรุณากรอกชื่อและอีเมลให้ครบ");
         return;
       }
 
-      const dist = getDistanceFromLatLonInMeters(userLat, userLng, lat_home, lng_home);
-      if (dist > 20) {
-        alert("❌ คุณอยู่ห่างเกิน 20 เมตร ไม่สามารถเช็คชื่อได้");
+      if (!navigator.geolocation) {
+        alert("เบราว์เซอร์ไม่รองรับ GPS");
         return;
       }
 
-      const name = document.getElementById("name").value;
-      const status = document.getElementById("status").value;
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const dist = distanceMeter(lat, lng, DEST_LAT, DEST_LNG).toFixed(2);
 
-      fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
-        method: "POST",
-        body: JSON.stringify({ name, status, lat: userLat, lng: userLng }),
-        headers: { "Content-Type": "application/json" }
-      })
-        .then(res => res.text())
-        .then(data => {
-          document.getElementById("result").innerText = "✅ บันทึกสำเร็จ: " + name;
-        })
-        .catch(err => {
-          document.getElementById("result").innerText = "❌ เกิดข้อผิดพลาด: " + err.message;
-        });
-    });
+        if (dist <= ALLOW_RADIUS) {
+          const data = {
+            name: name,
+            email: email,
+            time: new Date().toLocaleString("th-TH"),
+            lat: lat,
+            lng: lng,
+            dist: dist
+          };
+
+          fetch(SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          })
+          .then(res => res.text())
+          .then(txt => {
+            document.getElementById("result").innerHTML = `<p class="ok">✅ บันทึกสำเร็จ</p>`;
+          })
+          .catch(err => {
+            document.getElementById("result").innerHTML = `<p class="warn">เกิดข้อผิดพลาด: ${err}</p>`;
+          });
+        } else {
+          document.getElementById("result").innerHTML = `<p class="warn">❌ คุณอยู่นอกระยะ (${dist} เมตร)</p>`;
+        }
+      }, err => {
+        alert("ไม่สามารถดึงตำแหน่งได้: " + err.message);
+      });
+    }
   </script>
 </body>
 </html>
