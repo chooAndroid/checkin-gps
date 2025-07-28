@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ระบบล็อกอิน Gmail</title>
+  <title>ล็อกอิน Gmail รองรับทุกอุปกรณ์</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin-top: 100px; }
@@ -12,34 +12,44 @@
 </head>
 <body>
   <h2>ระบบเช็คชื่อสำหรับนักศึกษาแพทย์</h2>
-  <div id="g_id_onload"
-       data-client_id="1032301073622-jo51upjj1a45kdkqrm78sved3gilg2ml.apps.googleusercontent.com"
-       data-callback="handleCredentialResponse"
-       data-auto_prompt="false">
-  </div>
 
-  <div class="g_id_signin" 
-       data-type="standard"
-       data-size="large"
-       data-theme="outline"
-       data-text="sign_in_with"
-       data-shape="rectangular"
-       data-logo_alignment="left">
-  </div>
+  <div id="buttonDiv"></div>
 
   <div id="saveSection">
     <button onclick="alert('พร้อมบันทึก!')">บันทึก</button>
   </div>
-
   <div id="errorMessage"></div>
 
   <script>
-    const registeredEmail = "cchajuwan@gmail.com"; // เปลี่ยนเป็นอีเมลที่ใช้ลงทะเบียนในเครื่อง
+    const registeredEmail = "cchajuwan@gmail.com"; // เปลี่ยนเป็นอีเมลเป้าหมาย
+
+    window.onload = function () {
+      google.accounts.id.initialize({
+        client_id: "YOUR_GOOGLE_CLIENT_ID",
+        callback: handleCredentialResponse,
+        ux_mode: "popup", // ✅ ลอง popup ก่อน
+        auto_select: true,
+        prompt_parent_id: "buttonDiv",
+        cancel_on_tap_outside: false
+      });
+
+      google.accounts.id.prompt((notification) => {
+        // ถ้า popup ถูกบล็อกหรือ error → fallback เป็น redirect
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          google.accounts.id.initialize({
+            client_id: "YOUR_GOOGLE_CLIENT_ID",
+            callback: handleCredentialResponse,
+            ux_mode: "redirect",
+          });
+          google.accounts.id.prompt(); // เรียก prompt อีกครั้งแบบ redirect
+        }
+      });
+    };
 
     function parseJwt(token) {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
       return JSON.parse(jsonPayload);
@@ -53,7 +63,7 @@
         document.getElementById("saveSection").style.display = "block";
         document.getElementById("errorMessage").innerText = "";
       } else {
-        document.getElementById("errorMessage").innerText = "อีเมลไม่ตรงกับที่ลงทะเบียนในเครื่อง กรุณาใช้บัญชี Gmail หลัก";
+        document.getElementById("errorMessage").innerText = "อีเมลไม่ตรงกับอุปกรณ์ กรุณาใช้ Gmail ที่ลงทะเบียนไว้";
       }
     }
   </script>
