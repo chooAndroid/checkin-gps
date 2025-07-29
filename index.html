@@ -43,10 +43,11 @@
       const formData = new FormData(form);
       const email = formData.get("email").trim();
 
-      if (!email.endsWith("@gmail.com")) {
-        document.getElementById("result").innerText = "❌ โปรดใช้อีเมล Gmail เท่านั้น";
-        return;
-      }
+      if (!email.includes("@")) {
+  document.getElementById("result").innerText = "❌ โปรดกรอกอีเมลให้ถูกต้อง เช่น user@domain.com";
+  return;
+}
+
 
       if (!navigator.geolocation) {
         document.getElementById("result").innerText = "❌ เบราว์เซอร์ไม่รองรับ GPS";
