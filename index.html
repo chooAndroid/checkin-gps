@@ -2,94 +2,54 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ระบบเช็คชื่อ (GPS + Email)</title>
+  <title>ระบบเช็คชื่อ (GPS + Login)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <h2>✅ ระบบเช็คชื่อด้วย GPS</h2>
 
-  <form id="checkinForm">
-    <label>อีเมล (Gmail):</label><br>
-    <input type="email" name="email" required><br><br>
+  <div id="userinfo" style="margin-bottom: 1em; font-weight: bold;"></div>
 
+  <form id="checkinForm">
+    <input type="hidden" name="name" id="name">
+    <input type="hidden" name="email" id="email">
     <button type="submit">✅ เช็คชื่อ</button>
   </form>
 
-  <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
+  <div id="result" style="margin-top: 1em;"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec"; // เปลี่ยนเป็น URL ของลุงหากมีอันใหม่
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec"; // เปลี่ยนเป็นของลุงเองถ้าใช้คนละอัน
 
     const centerLat = 15.223933;
     const centerLng = 104.933856;
     const maxDistance = 200;
 
+    // ✅ ดึงค่าจาก URL
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get("name") || "ไม่ระบุ";
+    const email = params.get("email") || "ไม่ระบุ";
+
+    document.getElementById("name").value = name;
+    document.getElementById("email").value = email;
+    document.getElementById("userinfo").innerHTML = `👤 คุณ <b>${name}</b><br>📧 ${email}`;
+
+    // ✅ คำนวณระยะ
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) *
-        Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) *
+                Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    // ✅ เมื่อ submit ฟอร์ม
     document.getElementById("checkinForm").addEventListener("submit", function(e) {
       e.preventDefault();
-      const form = this;
-      const formData = new FormData(form);
-      const email = formData.get("email").trim();
-
-      if (!email.includes("@")) {
-  document.getElementById("result").innerText = "❌ โปรดกรอกอีเมลให้ถูกต้อง เช่น user@domain.com";
-  return;
-}
-
+      const result = document.getElementById("result");
 
       if (!navigator.geolocation) {
-        document.getElementById("result").innerText = "❌ เบราว์เซอร์ไม่รองรับ GPS";
-        return;
-      }
-
-      document.getElementById("result").innerText = "⏳ กำลังดึงตำแหน่ง...";
-
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const distance = getDistance(lat, lng, centerLat, centerLng);
-        const remark = distance > maxDistance
-          ? `ห่างจากจุดที่กำหนด ${Math.round(distance)} เมตร`
-          : `อยู่ในระยะ ${Math.round(distance)} เมตร`;
-
-        const data = {
-          email: email,
-          latitude: lat,
-          longitude: lng,
-          distance: Math.round(distance),
-          remark: remark,
-          time: new Date().toISOString()
-        };
-
-        fetch(WEB_APP_URL, {
-          method: "POST",
-          body: JSON.stringify(data)
-        })
-        .then(res => res.text())
-        .then(txt => {
-          document.getElementById("result").innerText = "✅ เช็คชื่อสำเร็จ: " + remark;
-          form.reset();
-        })
-        .catch(err => {
-          document.getElementById("result").innerText = "❌ บันทึกข้อมูลล้มเหลว: " + err.message;
-        });
-
-      }, function(error) {
-        document.getElementById("result").innerText = "❌ ไม่สามารถดึงตำแหน่งได้: " + error.message;
-      }, { enableHighAccuracy: true, timeout: 10000 });
-    });
-  </script>
-</body>
-</html>
+        result.innerText = "❌ เบราว์เซอร์ไม่รอง
