@@ -2,70 +2,67 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ล็อกอิน Gmail รองรับทุกอุปกรณ์</title>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 100px; }
-    #saveSection { display: none; margin-top: 20px; }
-    #errorMessage { color: red; margin-top: 20px; }
-  </style>
+  <title>ระบบเช็คชื่อ (ทดสอบ GPS)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-  <h2>ระบบเช็คชื่อสำหรับนักศึกษาแพทย์</h2>
+  <h2>✅ ระบบเช็คชื่อ (เวอร์ชันทดสอบ GPS)</h2>
+  <form id="checkinForm">
+    <label>ชื่อ-นามสกุล:</label><br>
+    <input type="text" name="name" required><br><br>
 
-  <div id="buttonDiv"></div>
+    <label>สถานะ:</label><br>
+    <select name="status">
+      <option value="มาค่ะ/ครับ">มาค่ะ/ครับ</option>
+      <option value="สาย">สาย</option>
+      <option value="ลากิจ">ลากิจ</option>
+      <option value="ลาป่วย">ลาป่วย</option>
+    </select><br><br>
 
-  <div id="saveSection">
-    <button onclick="alert('พร้อมบันทึก!')">บันทึก</button>
-  </div>
-  <div id="errorMessage"></div>
+    <button type="submit">✅ เช็คชื่อเลย</button>
+  </form>
+
+  <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
 
   <script>
-    const registeredEmail = "cchajuwan@gmail.com"; // เปลี่ยนเป็นอีเมลเป้าหมาย
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
 
-    window.onload = function () {
-      google.accounts.id.initialize({
-        client_id: "YOUR_GOOGLE_CLIENT_ID",
-        callback: handleCredentialResponse,
-        ux_mode: "popup", // ✅ ลอง popup ก่อน
-        auto_select: true,
-        prompt_parent_id: "buttonDiv",
-        cancel_on_tap_outside: false
-      });
+    document.getElementById("checkinForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const form = this;
+      const formData = new FormData(form);
 
-      google.accounts.id.prompt((notification) => {
-        // ถ้า popup ถูกบล็อกหรือ error → fallback เป็น redirect
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          google.accounts.id.initialize({
-            client_id: "YOUR_GOOGLE_CLIENT_ID",
-            callback: handleCredentialResponse,
-            ux_mode: "redirect",
-          });
-          google.accounts.id.prompt(); // เรียก prompt อีกครั้งแบบ redirect
-        }
-      });
-    };
-
-    function parseJwt(token) {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
-    }
-
-    function handleCredentialResponse(response) {
-      const data = parseJwt(response.credential);
-      const email = data.email;
-
-      if (email === registeredEmail) {
-        document.getElementById("saveSection").style.display = "block";
-        document.getElementById("errorMessage").innerText = "";
-      } else {
-        document.getElementById("errorMessage").innerText = "อีเมลไม่ตรงกับอุปกรณ์ กรุณาใช้ Gmail ที่ลงทะเบียนไว้";
+      if (!navigator.geolocation) {
+        document.getElementById("result").innerText = "เบราว์เซอร์นี้ไม่รองรับ GPS";
+        return;
       }
-    }
+
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        const data = {
+          name: formData.get("name"),
+          status: formData.get("status"),
+          time: new Date().toISOString(),
+          latitude: lat,
+          longitude: lng
+        };
+
+        fetch(WEB_APP_URL, {
+          method: "POST",
+          body: JSON.stringify(data)
+        })
+        .then(res => res.text())
+        .then(txt => {
+          document.getElementById("result").innerText = txt;
+          form.reset();
+        });
+
+      }, function(error) {
+        document.getElementById("result").innerText = "❌ ไม่สามารถดึงตำแหน่งได้: " + error.message;
+      });
+    });
   </script>
 </body>
 </html>
