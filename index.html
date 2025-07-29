@@ -2,51 +2,74 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ระบบเช็คชื่อ (ทดสอบ GPS)</title>
+  <title>ระบบเช็คชื่อ (GPS + Email)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-  <h2>✅ ระบบเช็คชื่อ (เวอร์ชันทดสอบ GPS)</h2>
+  <h2>✅ ระบบเช็คชื่อด้วย GPS</h2>
+
   <form id="checkinForm">
-    <label>ชื่อ-นามสกุล:</label><br>
-    <input type="text" name="name" required><br><br>
+    <label>อีเมล (Gmail):</label><br>
+    <input type="email" name="email" required><br><br>
 
-    <label>สถานะ:</label><br>
-    <select name="status">
-      <option value="มาค่ะ/ครับ">มาค่ะ/ครับ</option>
-      <option value="สาย">สาย</option>
-      <option value="ลากิจ">ลากิจ</option>
-      <option value="ลาป่วย">ลาป่วย</option>
-    </select><br><br>
-
-    <button type="submit">✅ เช็คชื่อเลย</button>
+    <button type="submit">✅ เช็คชื่อ</button>
   </form>
 
   <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec"; // เปลี่ยนเป็น URL ของลุงหากมีอันใหม่
+
+    const centerLat = 15.223933;
+    const centerLng = 104.933856;
+    const maxDistance = 200;
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
 
     document.getElementById("checkinForm").addEventListener("submit", function(e) {
       e.preventDefault();
       const form = this;
       const formData = new FormData(form);
+      const email = formData.get("email").trim();
 
-      if (!navigator.geolocation) {
-        document.getElementById("result").innerText = "เบราว์เซอร์นี้ไม่รองรับ GPS";
+      if (!email.endsWith("@gmail.com")) {
+        document.getElementById("result").innerText = "❌ โปรดใช้อีเมล Gmail เท่านั้น";
         return;
       }
+
+      if (!navigator.geolocation) {
+        document.getElementById("result").innerText = "❌ เบราว์เซอร์ไม่รองรับ GPS";
+        return;
+      }
+
+      document.getElementById("result").innerText = "⏳ กำลังดึงตำแหน่ง...";
 
       navigator.geolocation.getCurrentPosition(function(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
+        const distance = getDistance(lat, lng, centerLat, centerLng);
+        const remark = distance > maxDistance
+          ? `ห่างจากจุดที่กำหนด ${Math.round(distance)} เมตร`
+          : `อยู่ในระยะ ${Math.round(distance)} เมตร`;
 
         const data = {
-          name: formData.get("name"),
-          status: formData.get("status"),
-          time: new Date().toISOString(),
+          email: email,
           latitude: lat,
-          longitude: lng
+          longitude: lng,
+          distance: Math.round(distance),
+          remark: remark,
+          time: new Date().toISOString()
         };
 
         fetch(WEB_APP_URL, {
@@ -55,13 +78,16 @@
         })
         .then(res => res.text())
         .then(txt => {
-          document.getElementById("result").innerText = txt;
+          document.getElementById("result").innerText = "✅ เช็คชื่อสำเร็จ: " + remark;
           form.reset();
+        })
+        .catch(err => {
+          document.getElementById("result").innerText = "❌ บันทึกข้อมูลล้มเหลว: " + err.message;
         });
 
       }, function(error) {
         document.getElementById("result").innerText = "❌ ไม่สามารถดึงตำแหน่งได้: " + error.message;
-      });
+      }, { enableHighAccuracy: true, timeout: 10000 });
     });
   </script>
 </body>
