@@ -1,44 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>กำลังโหลดข้อมูล...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Callback - Google Login</title>
 </head>
 <body>
-  <h2>🔄 กำลังดึงชื่อ + อีเมล จากบัญชี Google...</h2>
-  <div id="info" style="margin-top: 1em;"></div>
-
   <script>
-    // ดึง access_token จาก URL
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
+    // ดึง query params จาก URL (Google จะส่งกลับมา)
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('access_token');
 
     if (!accessToken) {
-      document.getElementById("info").innerText = "❌ ไม่พบ access token";
-      throw new Error("No access token");
+      document.body.innerHTML = "<h3>❌ ไม่พบ Access Token</h3>";
+    } else {
+      // เก็บ token ชั่วคราว
+      sessionStorage.setItem('google_token', accessToken);
+
+      // เด้งกลับไป index.html พร้อม token
+      window.location.href = "index.html?login=success";
     }
-
-    // เรียก Google People API เพื่อดึงชื่อ + อีเมล
-    fetch("https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses", {
-      headers: {
-        Authorization: "Bearer " + accessToken
-      }
-    })
-    .then(res => res.json())
-    .then(data => {
-      const name = data.names?.[0]?.displayName || "ไม่ทราบชื่อ";
-      const email = data.emailAddresses?.[0]?.value || "ไม่ทราบอีเมล";
-
-      document.getElementById("info").innerHTML = `
-        ✅ สวัสดีคุณ <b>${name}</b><br>
-        📧 อีเมล: ${email}<br><br>
-        👉 <a href="index.html?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}">ไปเช็คชื่อเลย</a>
-      `;
-    })
-    .catch(err => {
-      document.getElementById("info").innerText = "❌ เกิดข้อผิดพลาด: " + err.message;
-    });
   </script>
 </body>
 </html>
+
