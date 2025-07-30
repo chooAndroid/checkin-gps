@@ -2,54 +2,89 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ระบบเช็คชื่อ (GPS + Login)</title>
+  <title>ระบบเช็คชื่อด้วยบัญชี Google</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-  <h2>✅ ระบบเช็คชื่อด้วย GPS</h2>
+  <h2>🔐 เช็คชื่อด้วยบัญชี Google</h2>
 
-  <div id="userinfo" style="margin-bottom: 1em; font-weight: bold;"></div>
+  <div id="login-section">
+    <a href="https://accounts.google.com/o/oauth2/v2/auth?client_id=1032301073622-jo51upjj1a45kdkqrm78sved3gilg2ml.apps.googleusercontent.com&redirect_uri=https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec&response_type=token&scope=profile%20email">
+      ➜ Login with Google
+    </a>
+  </div>
 
-  <form id="checkinForm">
-    <input type="hidden" name="name" id="name">
-    <input type="hidden" name="email" id="email">
-    <button type="submit">✅ เช็คชื่อ</button>
-  </form>
-
-  <div id="result" style="margin-top: 1em;"></div>
+  <div id="checkin-section" style="display:none;">
+    <h2>✅ ระบบเช็คชื่อด้วย GPS</h2>
+    <form id="checkinForm">
+      <input type="hidden" name="name" id="nameInput">
+      <input type="hidden" name="status" value="มาตามระบบ">
+      <button type="submit">✅ เช็คชื่อ</button>
+    </form>
+    <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
+  </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec"; // เปลี่ยนเป็นของลุงเองถ้าใช้คนละอัน
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
 
-    const centerLat = 15.223933;
-    const centerLng = 104.933856;
-    const maxDistance = 200;
+    // ดึง access token จาก URL (หลังจาก redirect)
+    const urlParams = new URLSearchParams(window.location.hash.substr(1));
+    const accessToken = urlParams.get("access_token");
 
-    // ✅ ดึงค่าจาก URL
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get("name") || "ไม่ระบุ";
-    const email = params.get("email") || "ไม่ระบุ";
+    if (accessToken) {
+      // ซ่อนปุ่ม Login
+      document.getElementById("login-section").style.display = "none";
 
-    document.getElementById("name").value = name;
-    document.getElementById("email").value = email;
-    document.getElementById("userinfo").innerHTML = `👤 คุณ <b>${name}</b><br>📧 ${email}`;
+      // ดึงชื่อและอีเมลจาก Google
+      fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: {
+          Authorization: "Bearer " + accessToken
+        }
+      })
+      .then(res => res.json())
+      .then(user => {
+        const name = user.name || "ไม่ทราบชื่อ";
+        const email = user.email || "ไม่ทราบอีเมล";
 
-    // ✅ คำนวณระยะ
-    function getDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) ** 2 +
-                Math.cos(lat1 * Math.PI / 180) *
-                Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) ** 2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        document.getElementById("checkin-section").style.display = "block";
+        document.getElementById("nameInput").value = `${name} (${email})`;
+      });
     }
 
-    // ✅ เมื่อ submit ฟอร์ม
+    // ส่งข้อมูลไปยัง GAS
     document.getElementById("checkinForm").addEventListener("submit", function(e) {
       e.preventDefault();
-      const result = document.getElementById("result");
 
       if (!navigator.geolocation) {
-        result.innerText = "❌ เบราว์เซอร์ไม่รอง
+        document.getElementById("result").innerText = "❌ เบราว์เซอร์ไม่รองรับ GPS";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        const data = {
+          name: document.getElementById("nameInput").value,
+          status: "มาตามระบบ",
+          time: new Date().toISOString(),
+          latitude: lat,
+          longitude: lng
+        };
+
+        fetch(WEB_APP_URL, {
+          method: "POST",
+          body: JSON.stringify(data)
+        })
+        .then(res => res.text())
+        .then(txt => {
+          document.getElementById("result").innerText = txt;
+        });
+
+      }, function(error) {
+        document.getElementById("result").innerText = "❌ ไม่สามารถดึงตำแหน่งได้: " + error.message;
+      });
+    });
+  </script>
+</body>
+</html>
