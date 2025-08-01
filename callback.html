@@ -1,26 +1,24 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
   <meta charset="UTF-8">
+  <title>กำลังเข้าสู่ระบบ...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Callback - Google Login</title>
-</head>
-<body>
   <script>
-    // ดึง query params จาก URL (Google จะส่งกลับมา)
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = params.get('access_token');
+    // รับ access_token จาก URL
+    const hashParams = new URLSearchParams(window.location.hash.substr(1));
+    const accessToken = hashParams.get("access_token");
 
-    if (!accessToken) {
-      document.body.innerHTML = "<h3>❌ ไม่พบ Access Token</h3>";
+    if (accessToken) {
+      // ส่งต่อไปยัง index.html พร้อมแนบ token
+      window.location.href = "index.html#access_token=" + accessToken;
     } else {
-      // เก็บ token ชั่วคราว
-      sessionStorage.setItem('google_token', accessToken);
-
-      // เด้งกลับไป index.html พร้อม token
-      window.location.href = "index.html?login=success";
+      document.body.innerHTML = "<h3>❌ ไม่สามารถเข้าสู่ระบบได้</h3>";
     }
   </script>
+</head>
+<body>
+  <p>กำลังเข้าสู่ระบบ โปรดรอสักครู่...</p>
 </body>
 </html>
 
