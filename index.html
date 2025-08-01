@@ -11,6 +11,7 @@
   <div id="checkin-section" style="display:none;">
     <form id="checkinForm">
       <input type="hidden" name="name" id="nameInput">
+      <input type="hidden" name="email" id="emailInput">
       <input type="hidden" name="status" value="มาตามระบบ">
       <button type="submit">✅ เช็คชื่อ</button>
     </form>
@@ -18,14 +19,13 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjI2W_yjCCVgux4Tp_kwXDYAA1EUl7izze-FcXgv0v9m87L74OQ-NN6GyBxFoEFoZ6Nw/exec";
+    const WEB_APP_URL = "PASTE_YOUR_EXEC_URL_HERE"; // ✅ ใส่ URL /exec ที่ได้จากการ Deploy
 
-    // ดึง access token จาก URL (หลังจาก redirect)
+    // ดึง access token
     const urlParams = new URLSearchParams(window.location.hash.substr(1));
     const accessToken = urlParams.get("access_token");
 
     if (accessToken) {
-      // ดึงข้อมูลผู้ใช้จาก Google
       fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
         headers: { Authorization: "Bearer " + accessToken }
       })
@@ -35,7 +35,8 @@
         const email = user.email || "ไม่ทราบอีเมล";
 
         document.getElementById("checkin-section").style.display = "block";
-        document.getElementById("nameInput").value = `${name} (${email})`;
+        document.getElementById("nameInput").value = name;
+        document.getElementById("emailInput").value = email;
       });
     } else {
       document.body.innerHTML = "<h3>❌ กรุณาเข้าสู่ระบบจากหน้า Login ก่อน</h3>";
@@ -56,6 +57,7 @@
 
         const data = {
           name: document.getElementById("nameInput").value,
+          email: document.getElementById("emailInput").value,
           status: "มาตามระบบ",
           time: new Date().toISOString(),
           latitude: lat,
@@ -69,6 +71,9 @@
         .then(res => res.text())
         .then(txt => {
           document.getElementById("result").innerText = txt;
+        })
+        .catch(err => {
+          document.getElementById("result").innerText = "❌ เกิดข้อผิดพลาด: " + err.message;
         });
 
       }, function(error) {
