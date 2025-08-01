@@ -9,7 +9,7 @@
   <h2>🔐 เช็คชื่อด้วยบัญชี Google</h2>
 
   <div id="login-section">
-    <a href="https://accounts.google.com/o/oauth2/v2/auth?client_id=1032301073622-jo51upjj1a45kdkqrm78sved3gilg2ml.apps.googleusercontent.com&redirect_uri=https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec&response_type=token&scope=profile%20email">
+    <a href="https://accounts.google.com/o/oauth2/v2/auth?client_id=977953618500-objng5gqbtf9iiko1d6drm6okhk4ma0p.apps.googleusercontent.com&redirect_uri=https://script.google.com/macros/d/1n53LS09KYNwnNxsqNrF0bosL8-JCWxXgLlAJbZbaLA6MaYUuNQ7YRJan/usercallback&response_type=token&scope=profile%20email">
       ➜ Login with Google
     </a>
   </div>
@@ -25,7 +25,7 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjI2W_yjCCVgux4Tp_kwXDYAA1EUl7izze-FcXgv0v9m87L74OQ-NN6GyBxFoEFoZ6Nw/exec";
 
     // ดึง access token จาก URL (หลังจาก redirect)
     const urlParams = new URLSearchParams(window.location.hash.substr(1));
@@ -36,55 +36,5 @@
       document.getElementById("login-section").style.display = "none";
 
       // ดึงชื่อและอีเมลจาก Google
-      fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-        headers: {
-          Authorization: "Bearer " + accessToken
-        }
-      })
-      .then(res => res.json())
-      .then(user => {
-        const name = user.name || "ไม่ทราบชื่อ";
-        const email = user.email || "ไม่ทราบอีเมล";
+      fetch("https://www.googleapis.com/oauth2/v3
 
-        document.getElementById("checkin-section").style.display = "block";
-        document.getElementById("nameInput").value = `${name} (${email})`;
-      });
-    }
-
-    // ส่งข้อมูลไปยัง GAS
-    document.getElementById("checkinForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-
-      if (!navigator.geolocation) {
-        document.getElementById("result").innerText = "❌ เบราว์เซอร์ไม่รองรับ GPS";
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        const data = {
-          name: document.getElementById("nameInput").value,
-          status: "มาตามระบบ",
-          time: new Date().toISOString(),
-          latitude: lat,
-          longitude: lng
-        };
-
-        fetch(WEB_APP_URL, {
-          method: "POST",
-          body: JSON.stringify(data)
-        })
-        .then(res => res.text())
-        .then(txt => {
-          document.getElementById("result").innerText = txt;
-        });
-
-      }, function(error) {
-        document.getElementById("result").innerText = "❌ ไม่สามารถดึงตำแหน่งได้: " + error.message;
-      });
-    });
-  </script>
-</body>
-</html>
