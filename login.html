@@ -2,28 +2,18 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Login with Google</title>
+  <title>เข้าสู่ระบบเช็คชื่อ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <h2>🔐 เช็คชื่อด้วยบัญชี Google</h2>
-  <a id="loginBtn">➡️ Login with Google</a>
 
-  <script>
-    const clientId = "1032301073622-jo51upjj1a45kdkqrm78sved3gilg2ml.apps.googleusercontent.com";
-   
-	const redirectUri = "https://chooandroid.github.io/checkin-gps/callback.html";
-
-
-
-    const scope = "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile";
-    const authUrl = "https://accounts.google.com/o/oauth2/v2/auth" +
-      "?response_type=token" +
-      "&client_id=" + encodeURIComponent(clientId) +
-      "&redirect_uri=" + encodeURIComponent(redirectUri) +
-      "&scope=" + encodeURIComponent(scope) +
-      "&include_granted_scopes=true";
-
-    document.getElementById("loginBtn").href = authUrl;
-  </script>
+  <a href="https://accounts.google.com/o/oauth2/v2/auth
+?client_id=977953618500-objng5gqbtf9iiko1d6drm6okhk4ma0p.apps.googleusercontent.com
+&redirect_uri=https://chooAndroid.github.io/checkin-gps/callback.html
+&response_type=token
+&scope=profile%20email">
+      ➜ Login with Google
+  </a>
 </body>
 </html>
