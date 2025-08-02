@@ -2,52 +2,38 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ระบบเช็คชื่อด้วยบัญชี Google</title>
+  <title>ระบบเช็คชื่อ (ทดสอบ GPS)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-  <h2>✅ ระบบเช็คชื่อด้วย GPS</h2>
+  <h2>✅ ระบบเช็คชื่อ (เวอร์ชันทดสอบ GPS)</h2>
+  <form id="checkinForm">
+    <label>ชื่อ-นามสกุล:</label><br>
+    <input type="text" name="name" required><br><br>
 
-  <div id="checkin-section" style="display:none;">
-    <form id="checkinForm">
-      <input type="hidden" name="name" id="nameInput">
-      <input type="hidden" name="email" id="emailInput">
-      <input type="hidden" name="status" value="มาตามระบบ">
-      <button type="submit">✅ เช็คชื่อ</button>
-    </form>
-    <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
-  </div>
+    <label>สถานะ:</label><br>
+    <select name="status">
+      <option value="มาค่ะ/ครับ">มาค่ะ/ครับ</option>
+      <option value="สาย">สาย</option>
+      <option value="ลากิจ">ลากิจ</option>
+      <option value="ลาป่วย">ลาป่วย</option>
+    </select><br><br>
+
+    <button type="submit">✅ เช็คชื่อเลย</button>
+  </form>
+
+  <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLuV_2au3w-k1OTp8aDRU8hV9jb8iXA65Q1ecaSYREyNX-Axk2ES3kRGTxeLUFBqah/exec"; // ✅ ใส่ URL /exec ที่ได้จากการ Deploy
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
 
-    // ดึง access token
-    const urlParams = new URLSearchParams(window.location.hash.substr(1));
-    const accessToken = urlParams.get("access_token");
-
-    if (accessToken) {
-      fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-        headers: { Authorization: "Bearer " + accessToken }
-      })
-      .then(res => res.json())
-      .then(user => {
-        const name = user.name || "ไม่ทราบชื่อ";
-        const email = user.email || "ไม่ทราบอีเมล";
-
-        document.getElementById("checkin-section").style.display = "block";
-        document.getElementById("nameInput").value = name;
-        document.getElementById("emailInput").value = email;
-      });
-    } else {
-      document.body.innerHTML = "<h3>❌ กรุณาเข้าสู่ระบบจากหน้า Login ก่อน</h3>";
-    }
-
-    // ส่งข้อมูลไปยัง GAS
     document.getElementById("checkinForm").addEventListener("submit", function(e) {
       e.preventDefault();
+      const form = this;
+      const formData = new FormData(form);
 
       if (!navigator.geolocation) {
-        document.getElementById("result").innerText = "❌ เบราว์เซอร์ไม่รองรับ GPS";
+        document.getElementById("result").innerText = "เบราว์เซอร์นี้ไม่รองรับ GPS";
         return;
       }
 
@@ -56,9 +42,8 @@
         const lng = position.coords.longitude;
 
         const data = {
-          name: document.getElementById("nameInput").value,
-          email: document.getElementById("emailInput").value,
-          status: "มาตามระบบ",
+          name: formData.get("name"),
+          status: formData.get("status"),
           time: new Date().toISOString(),
           latitude: lat,
           longitude: lng
@@ -71,9 +56,7 @@
         .then(res => res.text())
         .then(txt => {
           document.getElementById("result").innerText = txt;
-        })
-        .catch(err => {
-          document.getElementById("result").innerText = "❌ เกิดข้อผิดพลาด: " + err.message;
+          form.reset();
         });
 
       }, function(error) {
