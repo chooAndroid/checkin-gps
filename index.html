@@ -16,13 +16,14 @@
   <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
 
   <script>
+    // URL Web App ของ Google Script
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
 
-    // 📍 จุดเช็คอินตึก 8
+    // 📍 พิกัดตึก 8
     const TARGET_LAT = 15.223933;
     const TARGET_LNG = 104.933856;
 
-    // ฟังก์ชันคำนวณระยะทาง (หน่วยเมตร)
+    // ฟังก์ชันคำนวณระยะทาง (หน่วย: เมตร)
     function getDistanceFromLatLon(lat1, lon1, lat2, lon2) {
       const R = 6371000; // รัศมีโลกเป็นเมตร
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -35,6 +36,7 @@
       return Math.round(R * c);
     }
 
+    // เมื่อกดปุ่มเช็คชื่อ
     document.getElementById("checkinForm").addEventListener("submit", function(e) {
       e.preventDefault();
       const form = this;
@@ -45,13 +47,15 @@
         return;
       }
 
+      // ดึงตำแหน่งจากมือถือ
       navigator.geolocation.getCurrentPosition(function(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        // คำนวณระยะทาง
+        // คำนวณระยะทางจากตึก 8
         const distance = getDistanceFromLatLon(lat, lng, TARGET_LAT, TARGET_LNG);
 
+        // เตรียมข้อมูลส่งไป Google Sheet
         const data = {
           name: formData.get("name"),
           status: distance + " เมตร",
@@ -60,6 +64,7 @@
           longitude: lng
         };
 
+        // ส่งข้อมูลไปบันทึก
         fetch(WEB_APP_URL, {
           method: "POST",
           body: JSON.stringify(data)
