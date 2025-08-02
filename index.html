@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>ระบบเช็คชื่อ (ทดสอบ GPS)</title>
+  <title>ระบบเช็คชื่อ (GPS+ระยะทาง)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
@@ -10,15 +10,6 @@
   <form id="checkinForm">
     <label>ชื่อ-นามสกุล:</label><br>
     <input type="text" name="name" required><br><br>
-
-    <label>สถานะ:</label><br>
-    <select name="status">
-      <option value="มาค่ะ/ครับ">มาค่ะ/ครับ</option>
-      <option value="สาย">สาย</option>
-      <option value="ลากิจ">ลากิจ</option>
-      <option value="ลาป่วย">ลาป่วย</option>
-    </select><br><br>
-
     <button type="submit">✅ เช็คชื่อเลย</button>
   </form>
 
@@ -26,6 +17,23 @@
 
   <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjsAbwI7_ztUHh0NhJS_VWbZFU3EAHc58nxhVx_JMuGJ6wG4IZ7UJnzUuiuWTpTz6R/exec";
+
+    // 📍 จุดเช็คอินตึก 8
+    const TARGET_LAT = 15.223933;
+    const TARGET_LNG = 104.933856;
+
+    // ฟังก์ชันคำนวณระยะทาง (หน่วยเมตร)
+    function getDistanceFromLatLon(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // รัศมีโลกเป็นเมตร
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return Math.round(R * c);
+    }
 
     document.getElementById("checkinForm").addEventListener("submit", function(e) {
       e.preventDefault();
@@ -41,9 +49,12 @@
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
+        // คำนวณระยะทาง
+        const distance = getDistanceFromLatLon(lat, lng, TARGET_LAT, TARGET_LNG);
+
         const data = {
           name: formData.get("name"),
-          status: formData.get("status"),
+          status: distance + " เมตร",
           time: new Date().toISOString(),
           latitude: lat,
           longitude: lng
@@ -55,7 +66,8 @@
         })
         .then(res => res.text())
         .then(txt => {
-          document.getElementById("result").innerText = txt;
+          document.getElementById("result").innerText = 
+            "✅ เช็คอินสำเร็จ อยู่ห่างจากตึก 8 ประมาณ " + distance + " เมตร";
           form.reset();
         });
 
@@ -66,3 +78,4 @@
   </script>
 </body>
 </html>
+
